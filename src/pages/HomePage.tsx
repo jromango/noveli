@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { BookOpen, Plus, Sparkles, Award } from 'lucide-react'
+import { BookOpen, Plus, Sparkles, Award, Trash2, Check } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Note, BookshelfBook } from '../services/database'
 import BookDetailModal from '../components/BookDetailModal'
@@ -65,6 +65,8 @@ export default function HomePage({
   const [previousXp, setPreviousXp] = useState(0)
   const [showLevelUp, setShowLevelUp] = useState(false)
   const [previousLevel, setPreviousLevel] = useState(1)
+  const [isSelectionMode, setIsSelectionMode] = useState(false)
+  const [selectedBookIds, setSelectedBookIds] = useState<Set<string>>(new Set())
 
   // Calculate gamification metrics
   const completedBooks = bookshelves.filter(book => book.status === 'completed').length
@@ -98,9 +100,46 @@ export default function HomePage({
     return '¡Buenos días'
   }
 
+  const toggleBookSelection = (bookId: string) => {
+    const newSelected = new Set(selectedBookIds)
+    if (newSelected.has(bookId)) {
+      newSelected.delete(bookId)
+    } else {
+      newSelected.add(bookId)
+    }
+    setSelectedBookIds(newSelected)
+  }
+
+  const selectAllBooks = () => {
+    if (selectedBookIds.size === bookshelves.length) {
+      setSelectedBookIds(new Set())
+    } else {
+      setSelectedBookIds(new Set(bookshelves.map(b => b.id)))
+    }
+  }
+
+  const deleteSelectedBooks = async () => {
+    if (selectedBookIds.size === 0) return
+    
+    const confirmed = window.confirm(
+      `¿Eliminar ${selectedBookIds.size} libro${selectedBookIds.size > 1 ? 's' : ''} de tu biblioteca?`
+    )
+    if (!confirmed) return
+
+    for (const bookId of selectedBookIds) {
+      await onBookRemoved(bookId)
+    }
+    setSelectedBookIds(new Set())
+    setIsSelectionMode(false)
+  }
+
   const handleBookClick = (book: BookshelfBook) => {
-    setSelectedBook(book)
-    setIsBookModalOpen(true)
+    if (isSelectionMode) {
+      toggleBookSelection(book.id)
+    } else {
+      setSelectedBook(book)
+      setIsBookModalOpen(true)
+    }
   }
 
   const staggerContainer = {
@@ -294,12 +333,58 @@ export default function HomePage({
             {/* READING NOW SECTION */}
             {readingBooks.length > 1 && (
               <motion.section variants={staggerItem} className="space-y-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <Sparkles size={24} style={{ color: isDarkMode ? '#D4AF37' : '#C4A484' }} />
-                  <h2 className={`font-serif text-2xl font-bold ${colorConfig.textPrimary}`}>
-                    También en lectura
-                  </h2>
+                <div className="flex items-center justify-between gap-2 mb-4">
+                  <div className="flex items-center gap-2">
+                    <Sparkles size={24} style={{ color: isDarkMode ? '#D4AF37' : '#C4A484' }} />
+                    <h2 className={`font-serif text-2xl font-bold ${colorConfig.textPrimary}`}>
+                      También en lectura
+                    </h2>
+                  </div>
+                  {readingBooks.length > 1 && (
+                    <button
+                      onClick={() => setIsSelectionMode(!isSelectionMode)}
+                      className="px-3 py-1 text-sm rounded-lg transition-all"
+                      style={{
+                        background: isSelectionMode
+                          ? isDarkMode ? 'rgba(212, 175, 55, 0.2)' : 'rgba(196, 164, 132, 0.15)'
+                          : isDarkMode ? 'rgba(212, 175, 55, 0.1)' : 'rgba(196, 164, 132, 0.08)',
+                        color: isDarkMode ? '#D4AF37' : '#C4A484',
+                      }}
+                    >
+                      {isSelectionMode ? '✕ Cancelar' : '☑ Seleccionar'}
+                    </button>
+                  )}
                 </div>
+
+                {isSelectionMode && (
+                  <div className="flex gap-2 mb-4">
+                    <button
+                      onClick={selectAllBooks}
+                      className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                      style={{
+                        background: isDarkMode ? 'rgba(212, 175, 55, 0.15)' : 'rgba(196, 164, 132, 0.12)',
+                        color: isDarkMode ? '#D4AF37' : '#C4A484',
+                        border: `1px solid ${isDarkMode ? 'rgba(212, 175, 55, 0.3)' : 'rgba(196, 164, 132, 0.25)'}`,
+                      }}
+                    >
+                      {selectedBookIds.size === readingBooks.length - 1 ? 'Deseleccionar todo' : 'Seleccionar todo'}
+                    </button>
+                    {selectedBookIds.size > 0 && (
+                      <button
+                        onClick={deleteSelectedBooks}
+                        className="px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2"
+                        style={{
+                          background: 'rgba(239, 68, 68, 0.15)',
+                          color: '#ef4444',
+                          border: '1px solid rgba(239, 68, 68, 0.3)',
+                        }}
+                      >
+                        <Trash2 size={16} />
+                        Eliminar {selectedBookIds.size}
+                      </button>
+                    )}
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
                   {readingBooks.slice(1).map((book, index) => (
@@ -310,7 +395,148 @@ export default function HomePage({
                       initial={{ opacity: 0, y: 12 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.08 }}
+                      className="relative"
                     >
+                      {isSelectionMode && (
+                        <div
+                          className="absolute -top-2 -right-2 z-10 w-6 h-6 rounded-full flex items-center justify-center cursor-pointer transition-all"
+                          style={{
+                            background: selectedBookIds.has(book.id)
+                              ? isDarkMode ? '#D4AF37' : '#C4A484'
+                              : isDarkMode ? 'rgba(51, 51, 51, 0.8)' : 'rgba(240, 240, 240, 0.9)',
+                            border: `2px solid ${selectedBookIds.has(book.id) ? 'transparent' : isDarkMode ? 'rgba(212, 175, 55, 0.4)' : 'rgba(196, 164, 132, 0.3)'}`,
+                          }}
+                          onClick={() => toggleBookSelection(book.id)}
+                        >
+                          {selectedBookIds.has(book.id) && <Check size={14} className="text-black" />}
+                        </div>
+                      )}
+                      <button
+                        onClick={() => handleBookClick(book)}
+                        className="w-full text-left rounded-[12px] overflow-hidden group"
+                      >
+                        <div className="relative w-full aspect-[2/3] bg-gray-700 overflow-hidden rounded-[12px]">
+                          {book.cover ? (
+                            <img
+                              src={book.cover}
+                              alt={book.title}
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-600 to-gray-800">
+                              <p className="text-white font-serif text-xs text-center px-2 line-clamp-3">
+                                {book.title}
+                              </p>
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+
+                          {/* Progress indicator */}
+                          <div className="absolute bottom-2 left-2 right-2">
+                            <div className="w-full h-0.5 rounded-full bg-black/40 overflow-hidden">
+                              <div
+                                className="h-full bg-gradient-to-r from-orange-400 to-green-400"
+                                style={{
+                                  width: `${Math.min(100, (book.currentPage / book.totalPages) * 100)}%`,
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        <p className="mt-2 text-xs font-semibold line-clamp-2" style={{ color: isDarkMode ? '#F5F1E8' : '#3B2F24' }}>
+                          {book.title}
+                        </p>
+                      </button>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.section>
+            )}
+
+            {/* MY BOOKSHELF SECTION */}
+            {bookshelves.length > 0 && (
+              <motion.section variants={staggerItem} className="space-y-4">
+                <div className="flex items-center justify-between gap-2 mb-4">
+                  <div className="flex items-center gap-2">
+                    <BookOpen size={24} style={{ color: isDarkMode ? '#D4AF37' : '#C4A484' }} />
+                    <h2 className={`font-serif text-2xl font-bold ${colorConfig.textPrimary}`}>
+                      Mis Lecturas
+                    </h2>
+                  </div>
+                  {bookshelves.length > 1 && (
+                    <button
+                      onClick={() => {
+                        setIsSelectionMode(!isSelectionMode)
+                        if (!isSelectionMode) setSelectedBookIds(new Set())
+                      }}
+                      className="px-3 py-1 text-sm rounded-lg transition-all"
+                      style={{
+                        background: isSelectionMode
+                          ? isDarkMode ? 'rgba(212, 175, 55, 0.2)' : 'rgba(196, 164, 132, 0.15)'
+                          : isDarkMode ? 'rgba(212, 175, 55, 0.1)' : 'rgba(196, 164, 132, 0.08)',
+                        color: isDarkMode ? '#D4AF37' : '#C4A484',
+                      }}
+                    >
+                      {isSelectionMode ? '✕ Cancelar' : '☑ Seleccionar'}
+                    </button>
+                  )}
+                </div>
+
+                {isSelectionMode && (
+                  <div className="flex gap-2 mb-4">
+                    <button
+                      onClick={selectAllBooks}
+                      className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                      style={{
+                        background: isDarkMode ? 'rgba(212, 175, 55, 0.15)' : 'rgba(196, 164, 132, 0.12)',
+                        color: isDarkMode ? '#D4AF37' : '#C4A484',
+                        border: `1px solid ${isDarkMode ? 'rgba(212, 175, 55, 0.3)' : 'rgba(196, 164, 132, 0.25)'}`,
+                      }}
+                    >
+                      {selectedBookIds.size === bookshelves.length ? 'Deseleccionar todo' : 'Seleccionar todo'}
+                    </button>
+                    {selectedBookIds.size > 0 && (
+                      <button
+                        onClick={deleteSelectedBooks}
+                        className="px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2"
+                        style={{
+                          background: 'rgba(239, 68, 68, 0.15)',
+                          color: '#ef4444',
+                          border: '1px solid rgba(239, 68, 68, 0.3)',
+                        }}
+                      >
+                        <Trash2 size={16} />
+                        Eliminar {selectedBookIds.size}
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+                  {bookshelves.map((book, index) => (
+                    <motion.div
+                      key={book.id}
+                      whileHover={{ scale: 1.06, y: -4 }}
+                      whileTap={{ scale: 0.95 }}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.06 }}
+                      className="relative"
+                    >
+                      {isSelectionMode && (
+                        <div
+                          className="absolute -top-2 -right-2 z-10 w-6 h-6 rounded-full flex items-center justify-center cursor-pointer transition-all"
+                          style={{
+                            background: selectedBookIds.has(book.id)
+                              ? isDarkMode ? '#D4AF37' : '#C4A484'
+                              : isDarkMode ? 'rgba(51, 51, 51, 0.8)' : 'rgba(240, 240, 240, 0.9)',
+                            border: `2px solid ${selectedBookIds.has(book.id) ? 'transparent' : isDarkMode ? 'rgba(212, 175, 55, 0.4)' : 'rgba(196, 164, 132, 0.3)'}`,
+                          }}
+                          onClick={() => toggleBookSelection(book.id)}
+                        >
+                          {selectedBookIds.has(book.id) && <Check size={14} className="text-black" />}
+                        </div>
+                      )}
                       <button
                         onClick={() => handleBookClick(book)}
                         className="w-full text-left rounded-[12px] overflow-hidden group"
