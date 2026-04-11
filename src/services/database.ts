@@ -371,7 +371,7 @@ export async function getPublicNotes(query?: string): Promise<Note[]> {
     }
 
     const { data: profilesData, error: profileError } = await supabase
-      .from('user_profiles')
+      .from('profiles')
       .select('id, username')
       .in('id', userIds)
 
@@ -417,7 +417,7 @@ export async function getUserProfile(): Promise<UserProfile | null> {
     }
 
     const { data, error } = await supabase
-      .from('user_profiles')
+      .from('profiles')
       .select('*')
       .eq('id', user.id)
       .single()
@@ -434,7 +434,7 @@ export async function getUserProfile(): Promise<UserProfile | null> {
     const defaultUsername = user.email?.split('@')[0] || 'Lector'
     console.log('✨ Creando nuevo perfil de usuario')
     const { data: newProfile, error: insertError } = await supabase
-      .from('user_profiles')
+      .from('profiles')
       .insert([
         {
           id: user.id,
@@ -472,7 +472,7 @@ export async function updateUserProfile(
     if (updates.is_private !== undefined) updateData.is_private = updates.is_private
 
     const { data, error } = await supabase
-      .from('user_profiles')
+      .from('profiles')
       .update(updateData)
       .eq('id', user.id)
       .select()
@@ -500,7 +500,7 @@ export async function updateUserXP(xpAmount: number): Promise<UserProfile | null
     }
 
     const { data, error } = await supabase
-      .from('user_profiles')
+      .from('profiles')
       .update({ xp: xpAmount })
       .eq('id', user.id)
       .select()
@@ -529,7 +529,7 @@ export async function addUserXP(xpGained: number): Promise<UserProfile | null> {
 
     // Get current XP
     const { data: profile, error: fetchError } = await supabase
-      .from('user_profiles')
+      .from('profiles')
       .select('xp, last_read_date')
       .eq('id', user.id)
       .single()
@@ -541,7 +541,7 @@ export async function addUserXP(xpGained: number): Promise<UserProfile | null> {
 
     // Update XP and last_read_date
     const { data, error } = await supabase
-      .from('user_profiles')
+      .from('profiles')
       .update({ 
         xp: newXp,
         last_read_date: today 
@@ -599,7 +599,7 @@ export async function searchReaders(query: string): Promise<ReaderProfile[]> {
     const userId = user?.id
 
     let profileQuery = supabase
-      .from('user_profiles')
+      .from('profiles')
       .select('id, username, avatar_url, xp, rank, is_private')
       .ilike('username', `%${query.trim()}%`)
       .or('is_private.is.null,is_private.eq.false')
@@ -796,7 +796,7 @@ export async function addXpAndUpdateRank(xpToAdd: number): Promise<UserProfile |
     else newRank = 'Lector Curioso'
 
     const { data, error } = await supabase
-      .from('user_profiles')
+      .from('profiles')
       .update({ xp: newXp, rank: newRank })
       .eq('id', user.id)
       .select()

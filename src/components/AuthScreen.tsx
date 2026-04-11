@@ -17,14 +17,14 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
         // Crear perfil automáticamente si no existe
         try {
           const { data: existingProfile } = await supabase
-            .from('user_profiles')
+            .from('profiles')
             .select('id')
             .eq('id', session.user.id)
             .single()
 
           if (!existingProfile) {
             const { error: profileError } = await supabase
-              .from('user_profiles')
+              .from('profiles')
               .insert([
                 {
                   id: session.user.id,
