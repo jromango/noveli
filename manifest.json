@@ -1,0 +1,19 @@
+{
+  "name": "Círculo Noveli",
+  "short_name": "Círculo Noveli",
+  "description": "Aplicación de lectura social con gamificación y comunidad",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0A0A0A",
+  "theme_color": "#D4AF37",
+  "icons": [
+    {
+      "src": "/n-crest.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
