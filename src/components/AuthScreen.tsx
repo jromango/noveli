@@ -1,14 +1,21 @@
-import React, { useEffect } from 'react'
-import { Auth } from '@supabase/auth-ui-react'
-import { ThemeSupa } from '@supabase/auth-ui-shared'
+import React, { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import NLogo from './NLogo'
+import AuthSignIn from './AuthSignIn'
+import AuthSignUp from './AuthSignUp'
+import AuthForgotPassword from './AuthForgotPassword'
+import { Chrome } from 'lucide-react'
 
 interface AuthScreenProps {
   onAuthSuccess: () => void
 }
 
+type AuthView = 'signin' | 'signup' | 'forgot'
+
 export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
+  const [authView, setAuthView] = useState<AuthView>('signin')
+  const [isLoadingGoogle, setIsLoadingGoogle] = useState(false)
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
@@ -28,6 +35,7 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
               .insert([
                 {
                   id: session.user.id,
+                  username: session.user.user_metadata?.name || session.user.email?.split('@')[0],
                   xp: 0,
                   rank: 'Lector Curioso',
                 },
@@ -50,6 +58,23 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
     return () => subscription.unsubscribe()
   }, [onAuthSuccess])
 
+  const handleGoogleSignIn = async () => {
+    setIsLoadingGoogle(true)
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+        },
+      })
+      if (error) console.error('Error con Google:', error)
+    } catch (error) {
+      console.error('Error:', error)
+    } finally {
+      setIsLoadingGoogle(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-primary flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -66,109 +91,57 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
           </p>
         </div>
 
-        {/* Auth Form */}
+        {/* Auth Form Container */}
         <div className="bg-secondary rounded-lg border border-gold/30 p-6 shadow-2xl shadow-gold/20">
-          <Auth
-            supabaseClient={supabase}
-            appearance={{
-              theme: ThemeSupa,
-              variables: {
-                default: {
-                  colors: {
-                    brand: '#D4AF37',
-                    brandAccent: '#C5A059',
-                    brandButtonText: '#000000',
-                    defaultButtonBackground: '#111111',
-                    defaultButtonBackgroundHover: '#D4AF37',
-                    defaultButtonBorder: '#D4AF37',
-                    defaultButtonText: '#FFFFFF',
-                    dividerBackground: '#D4AF37',
-                    inputBackground: '#000000',
-                    inputBorder: '#D4AF37',
-                    inputBorderFocus: '#D4AF37',
-                    inputBorderHover: '#C5A059',
-                    inputLabelText: '#FFFFFF',
-                    inputPlaceholder: '#FFFFFF80',
-                    inputText: '#FFFFFF',
-                    messageText: '#FFFFFF',
-                    messageTextDanger: '#FF6B6B',
-                    anchorTextColor: '#D4AF37',
-                    anchorTextHoverColor: '#C5A059',
-                  },
-                  space: {
-                    spaceSmall: '4px',
-                    spaceMedium: '8px',
-                    spaceLarge: '16px',
-                    labelBottomMargin: '8px',
-                    anchorBottomMargin: '4px',
-                    emailInputSpacing: '4px',
-                    socialAuthSpacing: '4px',
-                    buttonPadding: '10px 15px',
-                    inputPadding: '10px 15px',
-                  },
-                  fontSizes: {
-                    baseBodySize: '14px',
-                    baseInputSize: '16px',
-                    baseLabelSize: '14px',
-                    baseButtonSize: '16px',
-                  },
-                  radii: {
-                    borderRadiusButton: '6px',
-                    buttonBorderRadius: '6px',
-                    inputBorderRadius: '6px',
-                  },
-                },
-              },
-              className: {
-                container: 'auth-container',
-                button: 'auth-button',
-                input: 'auth-input',
-                label: 'auth-label',
-                message: 'auth-message',
-                anchor: 'auth-anchor',
-              },
-            }}
-            providers={['google', 'github']}
-            redirectTo={window.location.origin}
-            onlyThirdPartyProviders={false}
-            localization={{
-              variables: {
-                sign_in: {
-                  email_label: 'Correo electrónico',
-                  password_label: 'Contraseña',
-                  button_label: 'Entrar a Círculo Noveli',
-                  loading_button_label: 'Entrando...',
-                  social_provider_text: 'Entrar con {{provider}}',
-                  link_text: '¿Ya tienes cuenta? Inicia sesión',
-                  confirmation_text: 'Revisa tu email para el enlace de confirmación',
-                },
-                sign_up: {
-                  email_label: 'Correo electrónico',
-                  password_label: 'Contraseña',
-                  button_label: 'Crear cuenta',
-                  loading_button_label: 'Creando cuenta...',
-                  social_provider_text: 'Registrarse con {{provider}}',
-                  link_text: '¿No tienes cuenta? Regístrate',
-                  confirmation_text: 'Revisa tu email para el enlace de confirmación',
-                },
-                forgotten_password: {
-                  email_label: 'Correo electrónico',
-                  button_label: 'Enviar instrucciones',
-                  loading_button_label: 'Enviando...',
-                  link_text: '¿Olvidaste tu contraseña?',
-                  confirmation_text: 'Revisa tu email para el enlace de restablecimiento',
-                },
-              },
-            }}
-          />
+          {authView === 'signin' && (
+            <>
+              {/* Google Sign In Button */}
+              <button
+                onClick={handleGoogleSignIn}
+                disabled={isLoadingGoogle}
+                className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-lg border border-gold/40 hover:border-gold/70 text-white hover:bg-gold/10 transition disabled:opacity-50 disabled:cursor-not-allowed mb-4"
+              >
+                <Chrome size={20} />
+                {isLoadingGoogle ? 'Conectando...' : 'Entrar con Google'}
+              </button>
+
+              {/* Divider */}
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gold/30"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-secondary text-gold/60">o</span>
+                </div>
+              </div>
+
+              {/* Sign In Form */}
+              <AuthSignIn
+                onSuccess={onAuthSuccess}
+                onSwitchToSignUp={() => setAuthView('signup')}
+                onForgotPassword={() => setAuthView('forgot')}
+              />
+            </>
+          )}
+
+          {authView === 'signup' && (
+            <AuthSignUp
+              onSuccess={onAuthSuccess}
+              onSwitchToSignIn={() => setAuthView('signin')}
+            />
+          )}
+
+          {authView === 'forgot' && (
+            <AuthForgotPassword
+              onBack={() => setAuthView('signin')}
+            />
+          )}
         </div>
 
         {/* Footer */}
-        <div className="text-center mt-6">
-          <p className="font-sans text-accent/60 text-sm">
-            Únete a la comunidad de lectores apasionados
-          </p>
-        </div>
+        <p className="text-center text-xs text-gold/50 mt-6">
+          Al entrar aceptas nuestros términos y condiciones de privacidad
+        </p>
       </div>
     </div>
   )

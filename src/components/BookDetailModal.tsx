@@ -261,10 +261,10 @@ export default function BookDetailModal({ book, isOpen, onClose, onUpdate, onRem
 
               <button
                 onClick={handleSaveProgress}
-                className={`w-full px-4 py-2 rounded-lg font-sans font-medium transition ${
+                className={`w-full px-4 py-3 rounded-lg font-sans font-semibold transition border-2 ${
                   isDarkMode 
-                    ? 'bg-[#D4AF37] text-[#1A1A1A] hover:bg-[#E5C158]' 
-                    : 'bg-text text-cream hover:bg-gray-800'
+                    ? 'bg-[#D4AF37] text-black border-[#D4AF37] hover:bg-[#E5C158] hover:border-[#E5C158]' 
+                    : 'bg-text text-cream border-text hover:bg-gray-800 hover:border-gray-800'
                 }`}
               >
                 Guardar Progreso
@@ -368,10 +368,10 @@ export default function BookDetailModal({ book, isOpen, onClose, onUpdate, onRem
                   <button
                     onClick={handleSaveNote}
                     disabled={!noteText.trim() || isSaving}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-sans font-medium transition disabled:opacity-50 disabled:cursor-not-allowed ${
+                    className={`flex items-center gap-2 px-4 py-3 rounded-lg font-sans font-semibold transition border-2 disabled:opacity-50 disabled:cursor-not-allowed ${
                       isDarkMode 
-                        ? 'bg-[#D4AF37] text-[#1A1A1A] hover:bg-[#E5C158]' 
-                        : 'bg-text text-cream hover:bg-gray-800'
+                        ? 'bg-[#D4AF37] text-black border-[#D4AF37] hover:bg-[#E5C158] hover:border-[#E5C158]' 
+                        : 'bg-text text-cream border-text hover:bg-gray-800 hover:border-gray-800'
                     }`}
                   >
                     <Save size={16} />
