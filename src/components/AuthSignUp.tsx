@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { Mail, Lock, User, Phone, Calendar, MapPin } from 'lucide-react'
+import { useTheme } from '../context/ThemeContext'
 
 interface AuthSignUpProps {
   onSuccess: () => void
@@ -29,6 +30,8 @@ export default function AuthSignUp({ onSuccess, onSwitchToSignIn }: AuthSignUpPr
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const { theme } = useTheme()
+  const isDarkMode = theme === 'dark'
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {}
@@ -117,6 +120,259 @@ export default function AuthSignUp({ onSuccess, onSwitchToSignIn }: AuthSignUpPr
 
   return (
     <form onSubmit={handleSignUp} className="space-y-4">
+      {/* Nombre y Apellido */}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={`block text-sm font-medium mb-1 ${
+            isDarkMode ? 'text-gold' : 'text-amber-700'
+          }`}>Nombre</label>
+          <input
+            type="text"
+            name="firstName"
+            value={formData.firstName}
+            onChange={handleChange}
+            placeholder="Juan"
+            className={`w-full px-3 py-2 rounded-lg placeholder-opacity-40 focus:outline-none focus:border-2 transition ${
+              isDarkMode
+                ? `bg-black border text-white placeholder-white ${
+                  errors.firstName ? 'border-red-500' : 'border-gold/40 focus:border-gold'
+                }`
+                : `bg-white border text-amber-900 placeholder-amber-700 ${
+                  errors.firstName ? 'border-red-500' : 'border-amber-600/40 focus:border-amber-600'
+                }`
+            }`}
+          />
+          {errors.firstName && <p className={`text-xs mt-1 ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>{errors.firstName}</p>}
+        </div>
+        <div>
+          <label className={`block text-sm font-medium mb-1 ${
+            isDarkMode ? 'text-gold' : 'text-amber-700'
+          }`}>Apellido</label>
+          <input
+            type="text"
+            name="lastName"
+            value={formData.lastName}
+            onChange={handleChange}
+            placeholder="Pérez"
+            className={`w-full px-3 py-2 rounded-lg placeholder-opacity-40 focus:outline-none focus:border-2 transition ${
+              isDarkMode
+                ? `bg-black border text-white placeholder-white ${
+                  errors.lastName ? 'border-red-500' : 'border-gold/40 focus:border-gold'
+                }`
+                : `bg-white border text-amber-900 placeholder-amber-700 ${
+                  errors.lastName ? 'border-red-500' : 'border-amber-600/40 focus:border-amber-600'
+                }`
+            }`}
+          />
+          {errors.lastName && <p className={`text-xs mt-1 ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>{errors.lastName}</p>}
+        </div>
+      </div>
+
+      {/* Alias */}
+      <div>
+        <label className={`block text-sm font-medium mb-1 ${
+          isDarkMode ? 'text-gold' : 'text-amber-700'
+        }`}>Alias (usuario)</label>
+        <input
+          type="text"
+          name="username"
+          value={formData.username}
+          onChange={handleChange}
+          placeholder="juanPerez"
+          className={`w-full px-3 py-2 rounded-lg placeholder-opacity-40 focus:outline-none focus:border-2 transition ${
+            isDarkMode
+              ? `bg-black border text-white placeholder-white ${
+                errors.username ? 'border-red-500' : 'border-gold/40 focus:border-gold'
+              }`
+              : `bg-white border text-amber-900 placeholder-amber-700 ${
+                errors.username ? 'border-red-500' : 'border-amber-600/40 focus:border-amber-600'
+              }`
+          }`}
+        />
+        {errors.username && <p className={`text-xs mt-1 ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>{errors.username}</p>}
+      </div>
+
+      {/* Email */}
+      <div>
+        <label className={`block text-sm font-medium mb-1 ${
+          isDarkMode ? 'text-gold' : 'text-amber-700'
+        }`}>Correo electrónico</label>
+        <input
+          type="email"
+          name="email"
+          value={formData.email}
+          onChange={handleChange}
+          placeholder="tu@correo.com"
+          className={`w-full px-3 py-2 rounded-lg placeholder-opacity-40 focus:outline-none focus:border-2 transition ${
+            isDarkMode
+              ? `bg-black border text-white placeholder-white ${
+                errors.email ? 'border-red-500' : 'border-gold/40 focus:border-gold'
+              }`
+              : `bg-white border text-amber-900 placeholder-amber-700 ${
+                errors.email ? 'border-red-500' : 'border-amber-600/40 focus:border-amber-600'
+              }`
+          }`}
+        />
+        {errors.email && <p className={`text-xs mt-1 ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>{errors.email}</p>}
+      </div>
+
+      {/* Fecha de nacimiento */}
+      <div>
+        <label className={`block text-sm font-medium mb-1 ${
+          isDarkMode ? 'text-gold' : 'text-amber-700'
+        }`}>Fecha de nacimiento</label>
+        <input
+          type="date"
+          name="birthDate"
+          value={formData.birthDate}
+          onChange={handleChange}
+          className={`w-full px-3 py-2 rounded-lg focus:outline-none focus:border-2 transition ${
+            isDarkMode
+              ? `bg-black border text-white ${
+                errors.birthDate ? 'border-red-500' : 'border-gold/40 focus:border-gold'
+              }`
+              : `bg-white border text-amber-900 ${
+                errors.birthDate ? 'border-red-500' : 'border-amber-600/40 focus:border-amber-600'
+              }`
+          }`}
+        />
+        {errors.birthDate && <p className={`text-xs mt-1 ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>{errors.birthDate}</p>}
+      </div>
+
+      {/* País */}
+      <div>
+        <label className={`block text-sm font-medium mb-1 ${
+          isDarkMode ? 'text-gold' : 'text-amber-700'
+        }`}>País</label>
+        <select
+          name="country"
+          value={formData.country}
+          onChange={handleChange}
+          className={`w-full px-3 py-2 rounded-lg focus:outline-none focus:border-2 transition ${
+            isDarkMode
+              ? `bg-black border text-white ${
+                errors.country ? 'border-red-500' : 'border-gold/40 focus:border-gold'
+              }`
+              : `bg-white border text-amber-900 ${
+                errors.country ? 'border-red-500' : 'border-amber-600/40 focus:border-amber-600'
+              }`
+          }`}
+        >
+          <option value="">Selecciona tu país</option>
+          {COUNTRIES.map(country => (
+            <option key={country} value={country}>
+              {country}
+            </option>
+          ))}
+        </select>
+        {errors.country && <p className={`text-xs mt-1 ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>{errors.country}</p>}
+      </div>
+
+      {/* Teléfono (opcional) */}
+      <div>
+        <label className={`block text-sm font-medium mb-1 ${
+          isDarkMode ? 'text-gold' : 'text-amber-700'
+        }`}>Teléfono (opcional)</label>
+        <input
+          type="tel"
+          name="phone"
+          value={formData.phone}
+          onChange={handleChange}
+          placeholder="+1 (555) 123-4567"
+          className={`w-full px-3 py-2 rounded-lg placeholder-opacity-40 focus:outline-none focus:border-2 transition ${
+            isDarkMode
+              ? 'bg-black border border-gold/40 text-white placeholder-white focus:border-gold'
+              : 'bg-white border border-amber-600/40 text-amber-900 placeholder-amber-700 focus:border-amber-600'
+          }`}
+        />
+      </div>
+
+      {/* Contraseña */}
+      <div>
+        <label className={`block text-sm font-medium mb-1 ${
+          isDarkMode ? 'text-gold' : 'text-amber-700'
+        }`}>Contraseña</label>
+        <input
+          type="password"
+          name="password"
+          value={formData.password}
+          onChange={handleChange}
+          placeholder="••••••••"
+          className={`w-full px-3 py-2 rounded-lg placeholder-opacity-40 focus:outline-none focus:border-2 transition ${
+            isDarkMode
+              ? `bg-black border text-white placeholder-white ${
+                errors.password ? 'border-red-500' : 'border-gold/40 focus:border-gold'
+              }`
+              : `bg-white border text-amber-900 placeholder-amber-700 ${
+                errors.password ? 'border-red-500' : 'border-amber-600/40 focus:border-amber-600'
+              }`
+          }`}
+        />
+        {errors.password && <p className={`text-xs mt-1 ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>{errors.password}</p>}
+      </div>
+
+      {/* Confirmar Contraseña */}
+      <div>
+        <label className={`block text-sm font-medium mb-1 ${
+          isDarkMode ? 'text-gold' : 'text-amber-700'
+        }`}>Confirmar contraseña</label>
+        <input
+          type="password"
+          name="confirmPassword"
+          value={formData.confirmPassword}
+          onChange={handleChange}
+          placeholder="••••••••"
+          className={`w-full px-3 py-2 rounded-lg placeholder-opacity-40 focus:outline-none focus:border-2 transition ${
+            isDarkMode
+              ? `bg-black border text-white placeholder-white ${
+                errors.confirmPassword ? 'border-red-500' : 'border-gold/40 focus:border-gold'
+              }`
+              : `bg-white border text-amber-900 placeholder-amber-700 ${
+                errors.confirmPassword ? 'border-red-500' : 'border-amber-600/40 focus:border-amber-600'
+              }`
+          }`}
+        />
+        {errors.confirmPassword && <p className={`text-xs mt-1 ${isDarkMode ? 'text-red-400' : 'text-red-600'}`}>{errors.confirmPassword}</p>}
+      </div>
+
+      {/* Mensajes */}
+      {message && (
+        <div className={`p-3 rounded-lg text-sm ${
+          message.includes('✅')
+            ? isDarkMode
+              ? 'bg-green-900/20 text-green-400 border border-green-600/30'
+              : 'bg-green-50 text-green-700 border border-green-300'
+            : isDarkMode
+              ? 'bg-red-900/20 text-red-400 border border-red-600/30'
+              : 'bg-red-50 text-red-700 border border-red-300'
+        }`}>
+          {message}
+        </div>
+      )}
+
+      {/* Botón registrarse */}
+      <button
+        type="submit"
+        disabled={isLoading}
+        className={`w-full py-3 rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed ${
+          isDarkMode
+            ? 'bg-gold text-black hover:bg-gold/90'
+            : 'bg-amber-600 text-white hover:bg-amber-700'
+        }`}
+      >
+        {isLoading ? 'Creando cuenta...' : 'Crear cuenta'}
+      </button>
+
+      {/* Link cambiar a sign in */}
+      <button
+        type="button"
+        onClick={onSwitchToSignIn}
+        className={`w-full text-sm transition hover:opacity-70 ${isDarkMode ? 'text-gold' : 'text-amber-700'}`}
+      >
+        ¿Ya tienes cuenta? Inicia sesión
+      </button>
+    </form>
+  )
       {/* Nombre y Apellido */}
       <div className="grid grid-cols-2 gap-3">
         <div>
