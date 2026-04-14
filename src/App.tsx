@@ -43,7 +43,7 @@ function mapPathToSection(pathname: string): Section {
 export default function App() {
   const location = useLocation()
   const navigate = useNavigate()
-  const isAuthDisabled = import.meta.env.VITE_DISABLE_AUTH === 'true'
+  const isAuthDisabled = import.meta.env.VITE_DISABLE_AUTH !== 'false'
   const { theme, toggleTheme } = useTheme()
   const isDarkMode = theme === 'dark'
   const palette = themeConfig[theme]
