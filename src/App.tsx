@@ -43,6 +43,7 @@ function mapPathToSection(pathname: string): Section {
 export default function App() {
   const location = useLocation()
   const navigate = useNavigate()
+  const isAuthDisabled = import.meta.env.VITE_DISABLE_AUTH === 'true'
   const { theme, toggleTheme } = useTheme()
   const isDarkMode = theme === 'dark'
   const palette = themeConfig[theme]
@@ -59,6 +60,7 @@ export default function App() {
   const [isAuthLoading, setIsAuthLoading] = useState(true)
   const [showSplash, setShowSplash] = useState(true)
   const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false)
+  const [isFirstTimeProfileSetup, setIsFirstTimeProfileSetup] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
 
   const showToast = (text: string) => {
@@ -95,6 +97,10 @@ export default function App() {
         setUser(session?.user ?? null)
         setIsAuthLoading(false)
 
+        if (event === 'SIGNED_IN') {
+          navigate('/dashboard', { replace: true })
+        }
+
         // Si el usuario se desconecta, limpiar datos
         if (event === 'SIGNED_OUT') {
           setBookshelves([])
@@ -109,6 +115,10 @@ export default function App() {
       subscription.unsubscribe()
     }
   }, [])
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'auto' })
+  }, [location.pathname])
 
   // Verificar conexión a Supabase al cargar la app
   useEffect(() => {
@@ -126,6 +136,11 @@ export default function App() {
     const loadProfile = async () => {
       const profile = await getUserProfile()
       setUserProfile(profile)
+
+      if (profile && (!profile.username?.trim() || profile.username.trim().length < 3)) {
+        setIsFirstTimeProfileSetup(true)
+        setIsEditProfileModalOpen(true)
+      }
     }
 
     loadProfile()
@@ -133,7 +148,12 @@ export default function App() {
 
   // Cargar datos solo cuando hay usuario autenticado
   useEffect(() => {
-    if (!user) return
+    if (!user) {
+      if (isAuthDisabled) {
+        setIsLoading(false)
+      }
+      return
+    }
 
     const loadData = async () => {
       setIsLoading(true)
@@ -152,7 +172,7 @@ export default function App() {
     }
 
     loadData()
-  }, [user])
+  }, [user, isAuthDisabled])
 
   const handleBookSaved = async (book: BookshelfBook) => {
     try {
@@ -198,6 +218,7 @@ export default function App() {
 
   const handleAuthSuccess = () => {
     console.log('🎉 Autenticación exitosa, cargando aplicación...')
+    navigate('/dashboard', { replace: true })
   }
 
   const handleSignOut = async () => {
@@ -231,7 +252,7 @@ export default function App() {
   }
 
   // Mostrar pantalla de autenticación si no hay usuario y no está en comunidad
-  if (!user && currentSection !== 'community') {
+  if (!isAuthDisabled && !user && currentSection !== 'community') {
     return <AuthScreen onAuthSuccess={handleAuthSuccess} />
   }
 
@@ -243,7 +264,7 @@ export default function App() {
             notes={notes}
             bookshelves={bookshelves}
             isLoading={isLoading}
-            username={userProfile?.username || user.email?.split('@')[0] || 'Lector'}
+            username={userProfile?.username || user?.email?.split('@')[0] || 'Invitado'}
             onAddBook={handleAddBookClick}
             onXpGained={handleXpGained}
             onBookUpdated={handleBookUpdated}
@@ -338,15 +359,31 @@ export default function App() {
 
       <EditProfileModal
         isOpen={isEditProfileModalOpen}
-        onClose={() => setIsEditProfileModalOpen(false)}
+        onClose={() => {
+          if (!isFirstTimeProfileSetup) {
+            setIsEditProfileModalOpen(false)
+          }
+        }}
         currentUsername={userProfile?.username}
         currentAvatarUrl={userProfile?.avatar_url}
         currentBio={userProfile?.bio}
         currentIsPrivate={userProfile?.is_private}
+        title={isFirstTimeProfileSetup ? 'Bienvenido a Circulo Noveli' : undefined}
+        subtitle={
+          isFirstTimeProfileSetup
+            ? 'Hola, es tu primera vez. Elige un nombre de usuario para continuar.'
+            : undefined
+        }
+        forceCompletion={isFirstTimeProfileSetup}
         onProfileUpdated={async () => {
           const profile = await getUserProfile()
           setUserProfile(profile)
           setForceProfileRefresh((prev) => prev + 1)
+
+          if (profile?.username?.trim() && profile.username.trim().length >= 3) {
+            setIsFirstTimeProfileSetup(false)
+            setIsEditProfileModalOpen(false)
+          }
         }}
       />
     </MainLayout>

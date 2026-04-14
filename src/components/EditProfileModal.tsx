@@ -10,6 +10,9 @@ interface EditProfileModalProps {
   currentAvatarUrl?: string
   currentBio?: string
   currentIsPrivate?: boolean
+  title?: string
+  subtitle?: string
+  forceCompletion?: boolean
   onProfileUpdated: () => void
 }
 
@@ -20,6 +23,9 @@ export default function EditProfileModal({
   currentAvatarUrl,
   currentBio = '',
   currentIsPrivate = false,
+  title,
+  subtitle,
+  forceCompletion = false,
   onProfileUpdated,
 }: EditProfileModalProps) {
   const { theme, toggleTheme } = useTheme()
@@ -29,6 +35,7 @@ export default function EditProfileModal({
   const [isPrivate, setIsPrivate] = useState(currentIsPrivate)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [usernameError, setUsernameError] = useState<string | null>(null)
 
   useEffect(() => {
     if (isOpen) {
@@ -36,6 +43,7 @@ export default function EditProfileModal({
       setBio(currentBio)
       setIsPrivate(currentIsPrivate)
       setAvatarFile(null)
+      setUsernameError(null)
     }
   }, [isOpen, currentUsername, currentBio, currentIsPrivate])
 
@@ -47,10 +55,21 @@ export default function EditProfileModal({
   }
 
   const handleSave = async () => {
+    const trimmedUsername = username.trim()
+    if (!trimmedUsername) {
+      setUsernameError('El nombre de usuario es obligatorio')
+      return
+    }
+
+    if (trimmedUsername.length < 3) {
+      setUsernameError('El nombre de usuario debe tener al menos 3 caracteres')
+      return
+    }
+
     setIsSaving(true)
     try {
       await updateUserProfile({
-        username: username.trim(),
+        username: trimmedUsername,
         bio: bio.trim(),
         is_private: isPrivate,
       })
@@ -58,7 +77,9 @@ export default function EditProfileModal({
         await uploadUserAvatar(avatarFile)
       }
       onProfileUpdated()
-      onClose()
+      if (!forceCompletion) {
+        onClose()
+      }
     } catch (error) {
       console.error('Error updating profile:', error)
     } finally {
@@ -73,10 +94,10 @@ export default function EditProfileModal({
       <div className="scrollbar-hide w-full max-w-[520px] max-h-[90vh] overflow-y-auto rounded-2xl border border-[#D4AF37]/25 bg-black/70 shadow-2xl shadow-black/50 backdrop-blur-xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
-          <h2 className="font-serif text-2xl font-bold text-[#D4AF37]">Configuración</h2>
+          <h2 className="font-serif text-2xl font-bold text-[#D4AF37]">{title || 'Configuración'}</h2>
           <button
             onClick={onClose}
-            disabled={isSaving}
+            disabled={isSaving || forceCompletion}
             className="rounded-full p-1 transition hover:bg-white/10 disabled:opacity-50"
           >
             <X size={18} className="text-white" />
@@ -85,6 +106,12 @@ export default function EditProfileModal({
 
         {/* Content */}
         <div className="space-y-5 p-5">
+          {subtitle && (
+            <div className="rounded-xl border border-[#D4AF37]/20 bg-[#D4AF37]/10 p-3">
+              <p className="font-sans text-sm text-[#F5F1E8]">{subtitle}</p>
+            </div>
+          )}
+
           {/* Username */}
           <div>
             <label className="mb-2 block font-sans text-xs font-semibold uppercase tracking-[0.16em] text-[#CFC4B3]">
@@ -97,6 +124,9 @@ export default function EditProfileModal({
               placeholder="Tu nombre de lector"
               className="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 font-sans text-sm text-white placeholder:text-white/40 focus:outline-none"
             />
+            {usernameError && (
+              <p className="mt-2 font-sans text-xs text-red-400">{usernameError}</p>
+            )}
           </div>
 
           <div>
@@ -176,13 +206,15 @@ export default function EditProfileModal({
 
           {/* Actions */}
           <div className="flex gap-3 pt-1">
-            <button
-              onClick={onClose}
-              disabled={isSaving}
-              className="flex-1 rounded-xl border border-white/15 px-4 py-2 font-sans text-[#E0D6C8] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Cancelar
-            </button>
+            {!forceCompletion && (
+              <button
+                onClick={onClose}
+                disabled={isSaving}
+                className="flex-1 rounded-xl border border-white/15 px-4 py-2 font-sans text-[#E0D6C8] transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+            )}
             <button
               onClick={handleSave}
               disabled={isSaving}

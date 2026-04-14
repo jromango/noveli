@@ -55,6 +55,11 @@ export interface FollowedTitle {
   created_at: string
 }
 
+function toHttpsUrl(url?: string | null): string | null {
+  if (!url) return null
+  return url.replace(/^http:\/\//i, 'https://')
+}
+
 // Verificar conexión a Supabase
 export async function verifySupabaseConnection(): Promise<boolean> {
   try {
@@ -83,7 +88,7 @@ function mapBookshelfRow(row: any): BookshelfBook {
     id: row.id,
     title: row.title,
     author: row.author,
-    cover: row.cover_url ?? null,
+    cover: toHttpsUrl(row.cover_url),
     externalBookId: row.external_book_id,
     totalPages: row.total_pages,
     progress: row.progress ?? 0,
@@ -160,7 +165,7 @@ export async function saveBook(
     const payload: any = {
       title: book.title,
       author: book.author,
-      cover_url: book.cover,
+      cover_url: toHttpsUrl(book.cover),
       total_pages: book.totalPages,
       genre: book.genre,
       current_page: currentPage,
@@ -527,32 +532,22 @@ export async function addUserXP(xpGained: number): Promise<UserProfile | null> {
       return null
     }
 
-    // Get current XP
-    const { data: profile, error: fetchError } = await supabase
-      .from('profiles')
-      .select('xp, last_read_date')
-      .eq('id', user.id)
-      .single()
+    const { error: rpcError } = await supabase.rpc('add_xp', {
+      target_user_id: user.id,
+      amount: xpGained,
+    })
 
-    if (fetchError) throw fetchError
+    if (rpcError) throw rpcError
 
-    const newXp = (profile?.xp || 0) + xpGained
-    const today = new Date().toISOString().split('T')[0]
-
-    // Update XP and last_read_date
     const { data, error } = await supabase
       .from('profiles')
-      .update({ 
-        xp: newXp,
-        last_read_date: today 
-      })
+      .select('*')
       .eq('id', user.id)
-      .select()
       .single()
 
     if (error) throw error
-    console.log(`✅ XP incrementado: +${xpGained} (Total: ${newXp})`)
-    return data
+    console.log(`✅ XP incrementado por RPC: +${xpGained}`)
+    return data as UserProfile
   } catch (error) {
     console.error('❌ Error incrementando XP:', error)
     return null
@@ -739,7 +734,7 @@ export async function followTitle(title: string, author: string, coverUrl?: stri
           user_id: userId,
           title,
           author,
-          cover_url: coverUrl || null,
+          cover_url: toHttpsUrl(coverUrl),
         },
       ])
 
@@ -786,7 +781,16 @@ export async function addXpAndUpdateRank(xpToAdd: number): Promise<UserProfile |
     const profile = await getUserProfile()
     if (!profile) return null
 
-    const newXp = profile.xp + xpToAdd
+    const { error: rpcError } = await supabase.rpc('add_xp', {
+      target_user_id: user.id,
+      amount: xpToAdd,
+    })
+    if (rpcError) throw rpcError
+
+    const refreshedProfile = await getUserProfile()
+    if (!refreshedProfile) return null
+
+    const newXp = refreshedProfile.xp
     let newRank = profile.rank
 
     // Determine rank based on XP
